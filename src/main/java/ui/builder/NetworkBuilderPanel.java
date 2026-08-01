@@ -12,6 +12,7 @@ public class NetworkBuilderPanel extends JPanel {
     private final DeviceForm deviceForm = new DeviceForm();
     private final JComboBox<String> startNodeSelector = new JComboBox<>();
     private String edgeSourceId = null;
+    private String selectedNodeId = null;
 
     public NetworkBuilderPanel(NetworkGraph graph) {
         this.graph = graph;
@@ -52,13 +53,24 @@ public class NetworkBuilderPanel extends JPanel {
                 if (clicked == null) return;
                 if (edgeSourceId == null) {
                     edgeSourceId = clicked;
+                    selectedNodeId = clicked;
                 } else {
                     if (!edgeSourceId.equals(clicked)) {
                         graph.addEdge(new Edge(edgeSourceId, clicked));
                     }
                     edgeSourceId = null;
+                    selectedNodeId = null;
                 }
                 canvas.repaint();
+            }
+        });
+
+        canvas.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override public void mouseDragged(MouseEvent e) {
+                if (selectedNodeId != null && edgeSourceId == null) {
+                    moveNode(selectedNodeId, e.getX(), e.getY());
+                    canvas.repaint();
+                }
             }
         });
     }
@@ -68,6 +80,12 @@ public class NetworkBuilderPanel extends JPanel {
             if (Math.hypot(n.x - x, n.y - y) <= 20) return n.id;
         }
         return null;
+    }
+
+    private void moveNode(String id, int x, int y) {
+        for (Node n : graph.getNodes()) {
+            if (n.id.equals(id)) { n.x = x; n.y = y; }
+        }
     }
 
     private void refreshStartNodeSelector() {
