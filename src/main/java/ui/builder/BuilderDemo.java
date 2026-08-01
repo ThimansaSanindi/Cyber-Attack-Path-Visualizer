@@ -8,7 +8,8 @@ public class BuilderDemo {
         JFrame frame = new JFrame("Network Builder - Standalone Test");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(new NetworkBuilderPanel(new GraphImpl()));
-        frame.pack();
+        frame.setSize(900, 650);       
+        frame.setResizable(true);      
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
