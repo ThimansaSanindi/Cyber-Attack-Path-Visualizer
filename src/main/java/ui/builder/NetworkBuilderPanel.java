@@ -10,6 +10,7 @@ import java.util.*;
 public class NetworkBuilderPanel extends JPanel {
     private final NetworkGraph graph;
     private final DeviceForm deviceForm = new DeviceForm();
+    private final JComboBox<String> startNodeSelector = new JComboBox<>();
     private String edgeSourceId = null;
 
     public NetworkBuilderPanel(NetworkGraph graph) {
@@ -18,8 +19,12 @@ public class NetworkBuilderPanel extends JPanel {
 
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton addDeviceBtn = new JButton("Add Device");
+        JButton saveBtn = new JButton("Save Network");
         top.add(deviceForm);
         top.add(addDeviceBtn);
+        top.add(new JLabel("Start node:"));
+        top.add(startNodeSelector);
+        top.add(saveBtn);
         add(top, BorderLayout.NORTH);
 
         CanvasPanel canvas = new CanvasPanel();
@@ -34,9 +39,12 @@ public class NetworkBuilderPanel extends JPanel {
             }
             Node node = new Node(deviceForm.getDeviceId(), deviceForm.getDeviceLabel(), 60, 60);
             graph.addNode(node);
+            refreshStartNodeSelector();
             deviceForm.clear();
             canvas.repaint();
         });
+
+        saveBtn.addActionListener(e -> onSave());
 
         canvas.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
@@ -62,7 +70,21 @@ public class NetworkBuilderPanel extends JPanel {
         return null;
     }
 
+    private void refreshStartNodeSelector() {
+        startNodeSelector.removeAllItems();
+        for (Node n : graph.getNodes()) startNodeSelector.addItem(n.id);
+    }
+
+    public String getSelectedStartNode() {
+        return (String) startNodeSelector.getSelectedItem();
+    }
+
     public NetworkGraph getGraph() { return graph; }
+
+    private void onSave() {
+        JOptionPane.showMessageDialog(this,
+            "Network saved: " + graph.getNodes().size() + " nodes.");
+    }
 
     private class CanvasPanel extends JPanel {
         @Override protected void paintComponent(Graphics g) {
