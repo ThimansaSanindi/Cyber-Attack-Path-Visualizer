@@ -58,7 +58,7 @@ public class NetworkBuilderPanel extends JPanel {
         
         addDeviceBtn.addActionListener(e -> {
 
-            if (!deviceForm.isValid()) {
+            if (!deviceForm.isInputValid()) {
                 JOptionPane.showMessageDialog(this,
                         "Device ID is required.");
                 return;
