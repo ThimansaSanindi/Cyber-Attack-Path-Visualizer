@@ -6,6 +6,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Deque;
+import java.util.ArrayDeque;
 
 public class NetworkBuilderPanel extends JPanel {
 
@@ -16,10 +20,16 @@ public class NetworkBuilderPanel extends JPanel {
     private String edgeSourceId = null;
     private String selectedNodeId = null;
 
-    // Used for click-to-place
+    
     private boolean waitingForPlacement = false;
     private String pendingId;
     private String pendingLabel;
+
+    
+    private final Set<String> nodeIds = new HashSet<>();
+
+     
+    private final Deque<String> recentlyAdded = new ArrayDeque<>();
 
     public NetworkBuilderPanel(NetworkGraph graph) {
         this.graph = graph;
@@ -29,12 +39,14 @@ public class NetworkBuilderPanel extends JPanel {
 
         JButton addDeviceBtn = new JButton("Add Device");
         JButton saveBtn = new JButton("Save Network");
+        JButton undoBtn = new JButton("Undo Last Device");
 
         top.add(deviceForm);
         top.add(addDeviceBtn);
         top.add(new JLabel("Start node:"));
         top.add(startNodeSelector);
         top.add(saveBtn);
+        top.add(undoBtn);
 
         add(top, BorderLayout.NORTH);
 
@@ -43,7 +55,7 @@ public class NetworkBuilderPanel extends JPanel {
         canvas.setBackground(Color.WHITE);
         add(canvas, BorderLayout.CENTER);
 
-        // Add Device button
+        
         addDeviceBtn.addActionListener(e -> {
 
             if (!deviceForm.isValid()) {
@@ -52,7 +64,16 @@ public class NetworkBuilderPanel extends JPanel {
                 return;
             }
 
-            pendingId = deviceForm.getDeviceId();
+            String candidateId = deviceForm.getDeviceId();
+
+            
+            if (nodeIds.contains(candidateId)) {
+                JOptionPane.showMessageDialog(this,
+                        "A device with ID \"" + candidateId + "\" already exists. Choose a different ID.");
+                return;
+            }
+
+            pendingId = candidateId;
             pendingLabel = deviceForm.getDeviceLabel();
 
             waitingForPlacement = true;
@@ -67,13 +88,15 @@ public class NetworkBuilderPanel extends JPanel {
 
         saveBtn.addActionListener(e -> onSave());
 
+        undoBtn.addActionListener(e -> undoLastDevice());
+
         // Mouse Clicks
         canvas.addMouseListener(new MouseAdapter() {
 
             @Override
             public void mouseClicked(MouseEvent e) {
 
-                // ---------- Place New Node ----------
+                
                 if (waitingForPlacement) {
 
                     Node node = new Node(
@@ -85,6 +108,10 @@ public class NetworkBuilderPanel extends JPanel {
 
                     graph.addNode(node);
 
+                    
+                    nodeIds.add(pendingId);
+                    recentlyAdded.push(pendingId);
+
                     refreshStartNodeSelector();
 
                     waitingForPlacement = false;
@@ -95,7 +122,7 @@ public class NetworkBuilderPanel extends JPanel {
                     return;
                 }
 
-                // ---------- Create Edge ----------
+                
                 String clicked = hitTestNode(e.getX(), e.getY());
 
                 if (clicked == null)
@@ -120,7 +147,7 @@ public class NetworkBuilderPanel extends JPanel {
             }
         });
 
-        // Drag Nodes
+        
         canvas.addMouseMotionListener(new MouseMotionAdapter() {
 
             @Override
@@ -183,6 +210,22 @@ public class NetworkBuilderPanel extends JPanel {
         );
     }
 
+    
+    private void undoLastDevice() {
+
+        if (recentlyAdded.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nothing to undo.");
+            return;
+        }
+
+        String lastId = recentlyAdded.pop();
+        graph.removeNode(lastId);
+        nodeIds.remove(lastId);
+
+        refreshStartNodeSelector();
+        repaint();
+    }
+
     private class CanvasPanel extends JPanel {
 
         @Override
@@ -197,7 +240,7 @@ public class NetworkBuilderPanel extends JPanel {
                     RenderingHints.VALUE_ANTIALIAS_ON
             );
 
-            // Draw edges
+            
             for (Map.Entry<String, List<String>> entry :
                     graph.getAdjacencyList().entrySet()) {
 
@@ -218,7 +261,7 @@ public class NetworkBuilderPanel extends JPanel {
                 }
             }
 
-            // Draw nodes
+            
             for (Node n : graph.getNodes()) {
 
                 g2.setColor(
